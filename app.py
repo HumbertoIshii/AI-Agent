@@ -1,5 +1,5 @@
 from smolagents import CodeAgent, DuckDuckGoSearchTool, HfApiModel, load_tool, tool
-from transformers import pipeline
+from transformers import pipeline, AutoModelForSequenceClassification, AutoTokenizer
 import datetime
 import requests
 import pytz
@@ -10,8 +10,12 @@ from Gradio_UI import GradioUI
 from itertools import islice
 from youtube_comment_downloader import *  # type: ignore
 
-# Load the Hugging Face sentiment analysis model
-sentiment_analyzer = pipeline("sentiment-analysis")
+# Load the Hugging Face sentiment analysis model explicitly
+model_name = "distilbert-base-uncased-finetuned-sst-2-english"
+model = AutoModelForSequenceClassification.from_pretrained(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+sentiment_analyzer = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
 
 # Custom Tool to Fetch YouTube Comments
 @tool
