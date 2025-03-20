@@ -26,8 +26,8 @@ def get_yt_comment(link: str, max_comments: int = 50) -> str:
                 break
         
         # Prepend a descriptive sentence and join the comments into a single string
-        comment_string = "\n\n".join(comments)
-        return f"These are the top {len(comments)} comments from the video:\n\n{comment_string}"
+        comment_string = "\n".join(comments)
+        return f"These are the top {len(comments)} comments from the video:\n{comment_string}"
     except Exception as e:
         return f"Error fetching comments: {str(e)}"
 
