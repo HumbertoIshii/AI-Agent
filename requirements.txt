@@ -16,4 +16,15 @@ tzdata==2025.1
 tzlocal==5.3.1
 urllib3==2.3.0
 youtube-comment-downloader==0.1.76
-
+colorama==0.4.6
+filelock==3.18.0
+fsspec==2025.3.0
+huggingface-hub==0.29.3
+numpy==2.2.4
+packaging==24.2
+PyYAML==6.0.2
+safetensors==0.5.3
+tokenizers==0.21.1
+tqdm==4.67.1
+transformers==4.49.0
+typing_extensions==4.12.2
