@@ -1,4 +1,4 @@
-from smolagents import CodeAgent,DuckDuckGoSearchTool, HfApiModel,load_tool,tool
+from smolagents import CodeAgent, DuckDuckGoSearchTool, HfApiModel, load_tool, tool
 import datetime
 import requests
 import pytz
@@ -6,18 +6,32 @@ import yaml
 from tools.final_answer import FinalAnswerTool
 
 from Gradio_UI import GradioUI
+from itertools import islice
+from youtube_comment_downloader import *  # type: ignore
 
-# Below is an example of a tool that does nothing. Amaze us with your creativity !
+# Custom Tool to Fetch YouTube Comments
 @tool
-def my_custom_tool(arg1:str, arg2:int)-> str: #it's import to specify the return type
-    #Keep this format for the description / args / args description but feel free to modify the tool
-    """A tool that does nothing yet 
+def get_yt_comment(link: str, max_comments: int = 50) -> str:
+    """A tool that fetches comments from a YouTube video and returns them as a single string with a descriptive context.
     Args:
-        arg1: the first argument
-        arg2: the second argument
+        link: The YouTube video URL.
+        max_comments: The maximum number of comments to retrieve.
     """
-    return "What magic will you build ?"
+    try:
+        downloader = YoutubeCommentDownloader()  # type: ignore
+        comments = []
+        for comment in downloader.get_comments_from_url(link, sort_by=SORT_BY_POPULAR):  # type: ignore
+            comments.append(comment['text'])
+            if len(comments) >= max_comments:
+                break
+        
+        # Prepend a descriptive sentence and join the comments into a single string
+        comment_string = "\n\n".join(comments)
+        return f"These are the top {len(comments)} comments from the video:\n\n{comment_string}"
+    except Exception as e:
+        return f"Error fetching comments: {str(e)}"
 
+# Other tools (like get_current_time_in_timezone)
 @tool
 def get_current_time_in_timezone(timezone: str) -> str:
     """A tool that fetches the current local time in a specified timezone.
@@ -33,29 +47,27 @@ def get_current_time_in_timezone(timezone: str) -> str:
     except Exception as e:
         return f"Error fetching time for timezone '{timezone}': {str(e)}"
 
-
 final_answer = FinalAnswerTool()
 
-# If the agent does not answer, the model is overloaded, please use another model or the following Hugging Face Endpoint that also contains qwen2.5 coder:
-# model_id='https://pflgm2locj2t89co.us-east-1.aws.endpoints.huggingface.cloud' 
-
+# Hugging Face Model Setup
 model = HfApiModel(
-max_tokens=2096,
-temperature=0.5,
-model_id='Qwen/Qwen2.5-Coder-32B-Instruct',# it is possible that this model may be overloaded
-custom_role_conversions=None,
+    max_tokens=2096,
+    temperature=0.5,
+    model_id='Qwen/Qwen2.5-Coder-32B-Instruct',  # It is possible that this model may be overloaded
+    custom_role_conversions=None,
 )
 
-
-# Import tool from Hub
+# Import image generation tool from Hub (though it’s not used here directly)
 image_generation_tool = load_tool("agents-course/text-to-image", trust_remote_code=True)
 
+# Load prompt templates (you might want to ensure this file exists)
 with open("prompts.yaml", 'r') as stream:
     prompt_templates = yaml.safe_load(stream)
-    
+
+# Define the agent with the new tool
 agent = CodeAgent(
     model=model,
-    tools=[final_answer], ## add your tools here (don't remove final answer)
+    tools=[final_answer, get_yt_comment],  # Added the new tool to the tools list
     max_steps=6,
     verbosity_level=1,
     grammar=None,
@@ -65,5 +77,5 @@ agent = CodeAgent(
     prompt_templates=prompt_templates
 )
 
-
+# Launch the Gradio UI
 GradioUI(agent).launch()
