@@ -1,4 +1,5 @@
 from smolagents import CodeAgent, DuckDuckGoSearchTool, HfApiModel, load_tool, tool
+from transformers import pipeline
 import datetime
 import requests
 import pytz
@@ -8,6 +9,9 @@ from tools.final_answer import FinalAnswerTool
 from Gradio_UI import GradioUI
 from itertools import islice
 from youtube_comment_downloader import *  # type: ignore
+
+# Load the Hugging Face sentiment analysis model
+sentiment_analyzer = pipeline("sentiment-analysis")
 
 # Custom Tool to Fetch YouTube Comments
 @tool
@@ -31,21 +35,29 @@ def get_yt_comment(link: str, max_comments: int = 50) -> str:
     except Exception as e:
         return f"Error fetching comments: {str(e)}"
 
-# Other tools (like get_current_time_in_timezone)
 @tool
-def get_current_time_in_timezone(timezone: str) -> str:
-    """A tool that fetches the current local time in a specified timezone.
+def analyze_sentiment_of_comments(comments: str) -> str:
+    """A tool that analyzes the sentiment of YouTube comments to determine the overall reception.
     Args:
-        timezone: A string representing a valid timezone (e.g., 'America/New_York').
+        comments: A string containing the YouTube comments.
     """
     try:
-        # Create timezone object
-        tz = pytz.timezone(timezone)
-        # Get current time in that timezone
-        local_time = datetime.datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-        return f"The current local time in {timezone} is: {local_time}"
+        # Analyze the sentiment of each comment
+        sentiments = sentiment_analyzer(comments)
+
+        # Count the number of positive and negative sentiments
+        positive_count = sum(1 for sentiment in sentiments if sentiment['label'] == 'POSITIVE')
+        negative_count = sum(1 for sentiment in sentiments if sentiment['label'] == 'NEGATIVE')
+
+        # Determine overall reception
+        if positive_count > negative_count:
+            return f"The overall reception is positive. Positive comments: {positive_count}, Negative comments: {negative_count}."
+        elif negative_count > positive_count:
+            return f"The overall reception is negative. Positive comments: {positive_count}, Negative comments: {negative_count}."
+        else:
+            return f"The overall reception is neutral. Positive comments: {positive_count}, Negative comments: {negative_count}."
     except Exception as e:
-        return f"Error fetching time for timezone '{timezone}': {str(e)}"
+        return f"Error during sentiment analysis: {str(e)}"
 
 final_answer = FinalAnswerTool()
 
@@ -67,7 +79,7 @@ with open("prompts.yaml", 'r') as stream:
 # Define the agent with the new tool
 agent = CodeAgent(
     model=model,
-    tools=[final_answer, get_yt_comment],  # Added the new tool to the tools list
+    tools=[final_answer, get_yt_comment, analyze_sentiment_of_comments],  # Added the new tool to the tools list
     max_steps=6,
     verbosity_level=1,
     grammar=None,
