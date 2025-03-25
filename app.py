@@ -46,8 +46,15 @@ def analyze_sentiment_of_comments(comments: str) -> str:
         comments: A string containing the YouTube comments.
     """
     try:
+        # Split comments into a list of individual comments
+        comment_list = comments.split("\n")
+
         # Analyze the sentiment of each comment
-        sentiments = sentiment_analyzer(comments)
+        sentiments = []
+        for comment in comment_list:
+            if len(comment.strip()) > 0:  # Ignore empty comments
+                sentiment = sentiment_analyzer(comment, truncation=True, max_length=512)[0]
+                sentiments.append(sentiment)
 
         # Count the number of positive and negative sentiments
         positive_count = sum(1 for sentiment in sentiments if sentiment['label'] == 'POSITIVE')
@@ -62,6 +69,7 @@ def analyze_sentiment_of_comments(comments: str) -> str:
             return f"The overall reception is neutral. Positive comments: {positive_count}, Negative comments: {negative_count}."
     except Exception as e:
         return f"Error during sentiment analysis: {str(e)}"
+
 
 final_answer = FinalAnswerTool()
 
