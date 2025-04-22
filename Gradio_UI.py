@@ -265,11 +265,12 @@ class GradioUI:
             stored_messages = gr.State([])
             file_uploads_log = gr.State([])
             chatbot = gr.Chatbot(
-                label="Agent",
+                label="Fish",
                 type="messages",
                 avatar_images=(
                     None,
-                    "https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/communication/Alfred.png",
+                    "resources/fish.png",
+                    # "https://huggingface.co/datasets/agents-course/course-images/resolve/main/en/communication/Alfred.png",
                 ),
                 resizeable=True,
                 scale=1,

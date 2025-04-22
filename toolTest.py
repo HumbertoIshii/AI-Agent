@@ -1,44 +1,9 @@
-import ollama
-from smolagents import CodeAgent, tool
-from tools.final_answer import FinalAnswerTool
-from Gradio_UI import GradioUI
-import yaml
-from transformers import pipeline
 from itertools import islice
 from youtube_comment_downloader import *
+from transformers import pipeline
 
-
-class OllamaModelWrapper:
-    def __init__(self, model_name: str):
-        self.model_name = model_name
-
-    def generate(self, prompt: str, **kwargs):
-        response = ollama.chat(
-            model=self.model_name,
-            messages=[{"role": "user", "content": str(prompt)}]
-        )
-        
-        print(response)
-
-        if 'text' in response:
-            return response['text']
-        elif 'message' in response:
-            return response['message']
-        else:
-            return "Unexpected response format"
-
-    def __call__(self, prompt: str, **kwargs):
-        return self.generate(prompt, **kwargs)
-
-# Initialize the model
-model = OllamaModelWrapper(model_name="qwen2.5:3b")
-
-final_answer = FinalAnswerTool()
-
-# Initialize the sentiment analyzer
 sentiment_analyzer = pipeline("sentiment-analysis")
 
-@tool
 def get_yt_comment(link: str, max_comments: int = 50) -> str:
     """A tool that fetches comments from a YouTube video and returns them as a single string with a descriptive context.
     Args:
@@ -58,8 +23,8 @@ def get_yt_comment(link: str, max_comments: int = 50) -> str:
         return f"These are the top {len(comments)} comments from the video:\n{comment_string}"
     except Exception as e:
         return f"Error fetching comments: {str(e)}"
-    
-@tool
+
+
 def analyze_sentiment_of_comments(comments: str) -> str:
     """
     Analyzes the sentiment of YouTube comments to determine the overall reception.
@@ -83,16 +48,6 @@ def analyze_sentiment_of_comments(comments: str) -> str:
             return f"The overall reception is neutral. Positive comments: {positive_count}, Negative comments: {negative_count}."
     except Exception as e:
         return f"Error during sentiment analysis: {str(e)}"
+    
 
-with open("prompts.yaml", 'r') as stream:
-    prompt_templates = yaml.safe_load(stream)
-
-agent = CodeAgent(
-    model=model,
-    tools=[final_answer, get_yt_comment, analyze_sentiment_of_comments],
-    max_steps=6,
-    verbosity_level=1,
-    prompt_templates=prompt_templates
-)
-
-GradioUI(agent).launch()
+print(analyze_sentiment_of_comments(get_yt_comment("https://www.youtube.com/watch?v=KxaPYhfJV4U")))
